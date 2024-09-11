@@ -746,12 +746,15 @@ func (c *Client) Do(req *Request) (*http.Response, error) {
 			break
 		}
 
+		// Compute the wait time before (maybe) draining the body so we can
+		// inspect it if needed.
+		wait := c.Backoff(c.RetryWaitMin, c.RetryWaitMax, i, resp)
+
 		// We're going to retry, consume any response to reuse the connection.
 		if doErr == nil {
 			c.drainBody(resp.Body)
 		}
 
-		wait := c.Backoff(c.RetryWaitMin, c.RetryWaitMax, i, resp)
 		if logger != nil {
 			desc := fmt.Sprintf("%s %s", req.Method, redactURL(req.URL))
 			if resp != nil {
